@@ -2,7 +2,7 @@ class Platform {
   PVector position;
   PVector size;
   float rotationY = 0;
-
+  
   Platform(PVector pos, PVector sz) {
     position = pos;
     size = sz;

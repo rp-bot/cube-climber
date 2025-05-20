@@ -1,6 +1,7 @@
 class Face {
   int faceID; // 0 = front, 1 = right, 2 = back, 3 = left
   ArrayList<Platform> platforms = new ArrayList<Platform>();
+  ArrayList<Coin> coins = new ArrayList<Coin>();
   float cubeSize;
 
   Face(int id, float s) {
@@ -44,6 +45,10 @@ class Face {
         }
         
         platforms.add(plat);
+        // Add a coin above every second platform
+        if ((i + j) % 2 == 0) {
+          coins.add(new Coin(pos.copy().add(0, -30, 0))); // floating above platform
+        }
       }
     }
   }
@@ -52,6 +57,10 @@ class Face {
   void display() {
     for (Platform p : platforms) {
       p.display();
+    }
+    
+    for (Coin c : coins) {
+      c.display();
     }
   }
 }

@@ -20,30 +20,40 @@ class Player {
   }
 
   void moveScreenRelative(float dx, float dy, int faceID) {
-    float limit = cube.size / 2 + 10;
+    float halfSize = cube.size / 2 - 10;
   
     switch (faceID) {
-      case 0: // Front
-        position.x = constrain(position.x + dx, -limit, limit);
-        position.y = constrain(position.y + dy, -limit, limit);
+      case 0: // Front (X/Y plane at Z+)
+        position.x = constrain(position.x + dx, cube.position.x - halfSize, cube.position.x + halfSize);
+        position.y += dy; // let gravity and platform collision handle vertical limits
+        position.z = cube.position.z + cube.size / 2 +10;
         break;
-      case 1: // Right
-        position.z = constrain(position.z + dx, -limit, limit);
-        position.y = constrain(position.y + dy, -limit, limit);
+  
+      case 1: // Right (Z/Y plane at X+)
+        position.z = constrain(position.z - dx, cube.position.z - halfSize, cube.position.z + halfSize); // reversed
+        position.y +=dy;
+        position.x = - (cube.position.x + cube.size / 2 + 10);
         break;
-      case 2: // Back
-        position.x = constrain(position.x - dx, -limit, limit);
-        position.y = constrain(position.y + dy, -limit, limit);
+  
+      case 2: // Back (X/Y plane at Z-)
+        position.x = constrain(position.x + dx, cube.position.x - halfSize, cube.position.x + halfSize); // reversed
+        position.y +=dy;
+        position.z = cube.position.z - cube.size / 2 -10 ;
         break;
-      case 3: // Left
-        position.z = constrain(position.z - dx, -limit, limit);
-        position.y = constrain(position.y + dy, -limit, limit);
+  
+      case 3: // Left (Z/Y plane at X-)
+        position.z = constrain(position.z - dx, cube.position.z - halfSize, cube.position.z + halfSize);
+        position.y +=dy;
+        position.x = -(cube.position.x - cube.size / 2 -10);
         break;
     }
+  
   }
 
 
-  void update(ArrayList<Platform> platforms, int faceID) {
+
+
+  void update(ArrayList<Platform> platforms) {
     isGrounded = false;
     velocity.y += gravityStrength;
   
@@ -52,37 +62,36 @@ class Player {
     nextPos.y += velocity.y;
   
     for (Platform p : platforms) {
-      float platformTopY = p.position.y + p.size.y / 2 - 20; // Adjust for player half-height
-    
+      float topY = p.position.y + p.size.y / 2 - 20;  // top surface
+      float bottomY = p.position.y - p.size.y / 2 + 20; // bottom surface
+  
+      boolean horizontallyAligned =
+        abs(position.x - p.position.x) < p.size.x/2 +10  &&
+        abs(position.z - p.position.z) < p.size.z/2 +10 ;
+  
+      // Collision from top (landing)
       if (velocity.y > 0 &&
-          position.y + velocity.y >= platformTopY &&
-          position.y < platformTopY + 5) {
-    
-        boolean horizontalAligned = false;
-    
-        horizontalAligned =
-        abs(position.x - p.position.x) < p.size.x / 2 &&
-        abs(position.z - p.position.z) < p.size.z / 2;
-
-
-    
-        if (horizontalAligned) {
-          velocity.y = 0;
-          nextPos.y = platformTopY;
-          isGrounded = true;
-          break;
-        }
+          position.y + velocity.y >= topY &&
+          position.y < topY + 5 &&
+          horizontallyAligned) {
+        velocity.y = 0;
+        nextPos.y = topY;
+        isGrounded = true;
+        break;
+      }
+  
+      // Collision from below (head bump)
+      if (velocity.y < 0 &&
+          position.y + velocity.y <= bottomY &&
+          position.y > bottomY - 5 &&
+          horizontallyAligned) {
+        velocity.y = 0;
+        nextPos.y = bottomY;
+        break;
       }
     }
 
-
-
-
-
-  
-    // Ground collision for all faces
-    float groundY = 150; // Ground plane Y minus half player height
-
+    float groundY = 150;
     if (nextPos.y > groundY) {
       nextPos.y = groundY;
       velocity.y = 0;
@@ -90,5 +99,11 @@ class Player {
     }
   
     position.y = nextPos.y;
+    
+
+
+    
+    
   }
+
 }
