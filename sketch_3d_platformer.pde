@@ -1,3 +1,27 @@
+/**
+ * ===========================
+ * Cube Climber - Controls Guide
+ * ===========================
+ * 
+ * Keyboard Controls:
+ * ------------------
+ * J key        - Move Left
+ * L key        - Move Right
+ * A key        - Rotate Cube Left
+ * D key        - Rotate Cube Right
+ * SPACEBAR     - Jump (only if player is grounded)
+ * ESC key      - Pause/Resume the game
+ * 
+ * Mouse Controls:
+ * ----------------
+ * Click on buttons (Resume, Restart) in the pause or end menus
+ * Use sliders to adjust music and sound effect volume
+ *
+ * Objective:
+ * -----------
+ * Collect all 32 coins (10 points each = 320 total) before time runs out.
+ * Rotate the cube and navigate all faces to win!
+ */
 Cube cube;
 Player player;
 float camAngle = 0;
@@ -15,9 +39,19 @@ boolean isPaused = false;
 PGraphics menuOverlay;
 PFont uiFont;
 Button resumeBtn, restartBtn;
-float musicVolume = 1.0;
+float musicVolume = 0.5;
 float sfxVolume = 1.0;
 Slider musicSlider, sfxSlider;
+AudioManager audio;
+Sample coinSample, jumpSample;
+int totalTime = 180000; // 3 minutes in milliseconds
+int startTime;
+boolean isGameOver = false;
+int pauseStartTime = 0;
+int totalPausedTime = 0;
+boolean isWin = false;
+int winTime = 0;
+int starsEarned = 0;
 
 
 void setup() {
@@ -26,7 +60,7 @@ void setup() {
   uiFont = createFont("Arial", 18, true);
   resumeBtn = new Button("Resume", width/2 - 60, height/2 - 60, 120, 40);
   restartBtn = new Button("Restart", width/2 - 60, height/2 - 10, 120, 40);
-  musicSlider = new Slider("Music Volume", width/2 - 60, height/2 + 50, 120, 1.0);
+  musicSlider = new Slider("Music Volume", width/2 - 60, height/2 + 50, 120, 0.5);
   sfxSlider = new Slider("SFX Volume", width/2 - 60, height/2 + 100, 120, 1.0);
 
 
@@ -43,18 +77,34 @@ void setup() {
   player = new Player(startPos);
 
   ground = new GroundPlane(2000, color(50, 50, 70));
+  audio = new AudioManager(musicVolume, sfxVolume);
+  try {
+    String coinPath = sketchPath("coin.wav");
+    coinSample = new Sample(coinPath);
+  } catch (Exception e) {
+    println("Error loading coin.wav: " + e.getMessage());
+    e.printStackTrace();
+    exit();
+  }
   
-  //cube.faces[0].platforms.clear(); // clear any auto platforms
-  //cube.faces[0].platforms.add(
-  //  new Platform(new PVector(0, 100, cube.size / 2 + 10), new PVector(80, 10, 20))
-  //);
-  //player = new Player(new PVector(0, 130, cube.size / 2 + 10)); 
+  try {
+    jumpSample = new Sample(sketchPath("jump.wav"));
+  } catch (Exception e) {
+    println("Failed to load jump.wav: " + e.getMessage());
+  }
+  
+  startTime = millis();
+
 }
 
 void draw() {
   background(255, 230, 200); 
   sky.display();
-  lights(); // after sky
+  lights();
+  ambientLight(80, 80, 80); // soft global light
+  directionalLight(255, 255, 255, -0.5, 2, -0.5); // key light
+  //directionalLight(255, 255, 255, 0.5, 1, 0.5); // key light
+
   hint(DISABLE_DEPTH_TEST); // Overlay 2D HUD on top of 3D
   camera(); // reset 2D camera
   fill(0);
@@ -64,7 +114,27 @@ void draw() {
   hint(ENABLE_DEPTH_TEST);
   // Smoothly interpolate camera angle
   camAngle = lerpAngle(camAngle, targetAngle, angleLerpSpeed);
+  
+  // Calculate remaining time
+  int elapsed = (millis() - totalPausedTime) - startTime;
+  int remaining = max(0, totalTime - elapsed);
+  float barWidth = map(remaining, 0, totalTime, 0, width*2);
+  
+  // Time bar
+  noStroke();
+  fill(255, 100, 100);
+  rect(0, 0, barWidth, 10);
+  
+  // Optional: show numeric countdown
+  fill(0);
+  textAlign(LEFT, TOP);
+  textFont(font);
+  text(nf(remaining / 1000 / 60, 2) + ":" + nf((remaining / 1000) % 60, 2), 10, 12);
 
+  
+  if (audio != null) { // Good practice to check if audio is initialized
+      audio.adjustTempoAndKey(remaining);
+  }
   // Set camera at a diagonal corner position, looking at cube center
   float r = 600;
   float angleY = radians(camAngle+45);
@@ -123,9 +193,24 @@ void draw() {
   for (Coin c : coins) {
     if (c.checkCollected(player.position)) {
       score += 10;
+      audio.playSFX(coinSample);
+
       println("Coin collected!");
     }
   }
+  
+  if (remaining == 0 && !isGameOver) {
+    isGameOver = true;
+    isPaused = false; // Ensure pause doesn't overlap
+  }
+  
+  
+  if (isPaused || isGameOver || isWin) {
+    audio.stopMusic();
+  } else {
+    audio.resumeMusic();
+  }
+
   
   if (isPaused) {
     hint(DISABLE_DEPTH_TEST);
@@ -133,7 +218,7 @@ void draw() {
     fill(0, 200);
     noStroke();
     rect(0, 0, width*2, height*2);
-  
+ 
     textFont(uiFont);
     resumeBtn.display();
     restartBtn.display();
@@ -144,11 +229,77 @@ void draw() {
     
     musicVolume = musicSlider.value;
     sfxVolume = sfxSlider.value;
+    audio.updateVolumes(musicVolume, sfxVolume);
+    // audio.adjustTempoAndKey(remaining); // REMOVE FROM HERE
+
     hint(ENABLE_DEPTH_TEST);
     return; // Skip game updates
+}
+
+
+  if (isWin) {
+    hint(DISABLE_DEPTH_TEST);
+    camera();
+    fill(0, 220);
+    noStroke();
+    rect(0, 0, width*2, height*2);
+  
+    textFont(uiFont);
+    fill(255);
+    textAlign(CENTER, CENTER);
+    text("You Win!", width/2, height/2 - 100);
+  
+    // Draw stars
+    float starSize = 30;
+    float startX = width/2 - starSize * 2;
+    for (int i = 0; i < 3; i++) {
+      if (i < starsEarned) {
+        fill(255, 204, 0); // Yellow
+      } else {
+        fill(100); // Gray
+      }
+      drawStar(startX + i * starSize * 2, height/2 - 30, starSize);
+    }
+  
+    restartBtn.display();
+    hint(ENABLE_DEPTH_TEST);
+    return;
   }
 
+  if (isGameOver) {
+    hint(DISABLE_DEPTH_TEST);
+    camera();
+    fill(0, 220);
+    noStroke();
+    rect(0, 0, width*2, height*2);
+  
+    textFont(uiFont);
+    fill(255);
+    textAlign(CENTER, CENTER);
+    text("Game Over", width/2, height/2 - 80);
+  
+    restartBtn.display();
+  
+    hint(ENABLE_DEPTH_TEST);
+    return;
+  }
 
+  if (score >= 320 && !isWin) { // Assuming 320 coins max * 10 points each
+    isWin = true;
+    isPaused = false;
+    isGameOver = false;
+    winTime = (millis() - totalPausedTime) - startTime;
+  
+    // Star calculation
+    if (winTime <= 60000) {
+      starsEarned = 3;
+    } else if (winTime <= 120000) {
+      starsEarned = 2;
+    } else {
+      starsEarned = 1;
+    }
+  }
+  
 }
 
 
@@ -190,10 +341,16 @@ float lerpAngle(float start, float end, float amt) {
 
 void keyPressed() {
   if (key == ESC) {
-    key = 0; // prevent default behavior
+    key = 0;
     isPaused = !isPaused;
-  }
   
+    if (isPaused) {
+      pauseStartTime = millis(); // record when pause started
+    } else {
+      totalPausedTime += millis() - pauseStartTime; // accumulate pause duration
+    }
+  }
+
   if (!isPaused) {
     if (key == 'j' || key == 'J') moveLeft = true;
     if (key == 'l' || key == 'L') moveRight = true;
@@ -208,8 +365,10 @@ void keyPressed() {
     }
     
     if (key == ' ' && player.isGrounded) {
-      player.velocity.y = -10; // jump impulse
+      player.velocity.y = -10;
+      if (jumpSample != null) audio.playSFX(jumpSample);
     }
+
   }
 }
 
@@ -217,10 +376,63 @@ void mousePressed() {
   if (isPaused) {
     if (resumeBtn.isHovered()) isPaused = false;
     if (restartBtn.isHovered()) restartGame();
-  }
+  } else if (isGameOver) {
+    if (restartBtn.isHovered()) restartGame();
+  }else if (isWin) {
+  if (restartBtn.isHovered()) restartGame();
+}
+
 }
 
 
+void drawStar(float x, float y, float radius) {
+  float angle = TWO_PI / 5;
+  float halfAngle = angle / 2.0;
+  beginShape();
+  for (float a = 0; a < TWO_PI; a += angle) {
+    float sx = x + cos(a) * radius;
+    float sy = y + sin(a) * radius;
+    vertex(sx, sy);
+    sx = x + cos(a + halfAngle) * radius / 2;
+    sy = y + sin(a + halfAngle) * radius / 2;
+    vertex(sx, sy);
+  }
+  endShape(CLOSE);
+}
+
+void drawDisc(float r, float thickness) {
+  int sides = 30;
+  float angleStep = TWO_PI / sides;
+
+  // Top face
+  beginShape(TRIANGLE_FAN);
+  vertex(0, -thickness/2, 0);
+  for (int i = 0; i <= sides; i++) {
+    float angle = i * angleStep;
+    vertex(cos(angle) * r, -thickness/2, sin(angle) * r);
+  }
+  endShape();
+
+  // Bottom face
+  beginShape(TRIANGLE_FAN);
+  vertex(0, thickness/2, 0);
+  for (int i = 0; i <= sides; i++) {
+    float angle = -i * angleStep;
+    vertex(cos(angle) * r, thickness/2, sin(angle) * r);
+  }
+  endShape();
+
+  // Side wall (optional, flat coin effect)
+  beginShape(QUAD_STRIP);
+  for (int i = 0; i <= sides; i++) {
+    float angle = i * angleStep;
+    float x = cos(angle) * r;
+    float z = sin(angle) * r;
+    vertex(x, -thickness/2, z);
+    vertex(x, thickness/2, z);
+  }
+  endShape();
+}
 
 
 
@@ -231,8 +443,11 @@ void keyReleased() {
 
 
 void restartGame() {
-  // Reset player, cube, score
   score = 0;
   cube = new Cube(new PVector(0, 0, 0), 300);
   player = new Player(new PVector(0, groundLevelY, cube.size/2 + 10));
+  startTime = millis(); // Reset timer
+  isPaused = false;
+  isGameOver = false;
+  isWin=false;
 }
