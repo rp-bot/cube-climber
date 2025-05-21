@@ -7,12 +7,11 @@ class AudioManager {
   Clock musicClock;
   float lastInterval;
 
-  int[] baseScale = {0, 2, 4, 5, 7, 9, 11}; // Major scale in semitones
-  int currentKey = 60; // MIDI note (Middle C)
-  int melodyIndex = 0; // Index for the baseScale
+  int[] baseScale = {0, 2, 4, 5, 7, 9, 11};
+  int currentKey = 60;
+  int melodyIndex = 0;
 
-  // --- Variables for new variations ---
-  float notePlayProbability = 0.80f; // 80% chance to play a note, 20% for a rest
+  float notePlayProbability = 0.80f;
 
   AudioManager(float musicVol, float sfxVol) {
     ac = new AudioContext();
@@ -24,8 +23,7 @@ class AudioManager {
     ac.out.addInput(masterGain);
     ac.start();
 
-    // User's preferred starting interval
-    lastInterval = 1000; // This will be updated by adjustTempoAndKey
+    lastInterval = 1000;
     setupClock(lastInterval);
   }
 
@@ -51,21 +49,15 @@ class AudioManager {
   void playMelodyNote() {
     if (ac == null) return;
 
-    // --- 1. Rhythmic Variation: Decide if we play a note or rest ---
     if (random(1) < notePlayProbability) {
-      // --- We are playing a note this tick ---
-
-      // --- 2. Melodic Variation: Determine the note offset ---
       int noteOffset = baseScale[melodyIndex % baseScale.length];
 
-      // Optional: Add random octave jumps for more pitch variation
       float octaveRand = random(1);
-      if (octaveRand < 0.05) { // 5% chance for octave up
+      if (octaveRand < 0.05) {
         noteOffset += 12;
-      } else if (octaveRand < 0.08) { // 3% chance for octave down (be careful with very low notes)
+      } else if (octaveRand < 0.08) {
         noteOffset -= 12;
       }
-      // --- End of Octave Jump Variation ---
 
       float freq = midiToFreq(currentKey + noteOffset);
 
@@ -77,28 +69,19 @@ class AudioManager {
 
       env.addSegment(0.0f, 150.0f, new Bead() {
         public void messageReceived(Bead message) {
-          g.kill(); // Ensure g is not null before killing
+          g.kill();
         }
       });
 
-      // --- Melodic Variation: Decide how melodyIndex advances for the NEXT note ---
       float r = random(1);
-      if (r < 0.65) {       // 65% chance: normal next note in scale
+      if (r < 0.65) {
         melodyIndex++;
-      } else if (r < 0.80) { // 15% chance: repeat current note (so melodyIndex effectively doesn't change for the next played note)
-        // No change to melodyIndex this time
-      } else if (r < 0.90) { // 10% chance: skip a note in the scale
+      } else if (r < 0.80) {
+      } else if (r < 0.90) {
         melodyIndex += 2;
-      } else {                // 10% chance: small step back in the scale
-        melodyIndex = max(0, melodyIndex - 1); // Prevent negative index if desired, or handle wrap-around
-        // For wrap-around backward: melodyIndex = (melodyIndex - 1 + baseScale.length) % baseScale.length;
+      } else {
+        melodyIndex = max(0, melodyIndex - 1);
       }
-      // --- End of Melodic Index Advancement Variation ---
-
-    } else {
-      // --- It's a rest: Do nothing for sound ---
-      // melodyIndex does not advance here, so the next potential note will be the same one
-      // If you want the melody to "progress" even over rests, you could advance melodyIndex here too.
     }
   }
 
@@ -115,19 +98,18 @@ class AudioManager {
     int newKey;
     float newInterval;
 
-    // User's preferred intervals (these are quite slow, which gives space for rests)
     if (remainingMillis > 120000) {
-      newKey = 60; // C
+      newKey = 60;
       newInterval = 2000;
-      notePlayProbability = 0.85f; // Higher chance to play notes when music is slow
+      notePlayProbability = 0.85f;
     } else if (remainingMillis > 60000) {
-      newKey = 65; // F
+      newKey = 65;
       newInterval = 1000;
-      notePlayProbability = 0.75f; // Medium chance
+      notePlayProbability = 0.75f;
     } else {
-      newKey = 67; // G
+      newKey = 67;
       newInterval = 500;
-      notePlayProbability = 0.65f; // Lower chance (more rests) when music is faster, creating intensity
+      notePlayProbability = 0.65f;
     }
 
     if (newKey != currentKey) currentKey = newKey;
@@ -140,15 +122,11 @@ class AudioManager {
   }
 
   void playSFX(Sample s) {
-    if (ac == null || s == null) return; // Guard clause
+    if (ac == null || s == null) return;
 
     SamplePlayer player = new SamplePlayer(ac, s);
-    player.setKillOnEnd(true); // Good practice: tells player to kill itself when done
+    player.setKillOnEnd(true);
     sfxGain.addInput(player);
-    // player.start(); // SamplePlayer automatically starts by default unless configured otherwise.
-                       // If it doesn't auto-start, uncomment this.
-                       // Typically, for one-shot samples, just adding it to a gain that is
-                       // part of the main audio graph is enough, or if it needs an explicit start:
     player.start();
   }
 
@@ -160,10 +138,9 @@ class AudioManager {
     if (musicClock != null) musicClock.start();
   }
 
-  // Call this method when your sketch is closing to clean up AudioContext
   public void stop() {
-      if (ac != null) {
-          ac.stop();
-      }
+    if (ac != null) {
+      ac.stop();
+    }
   }
 }

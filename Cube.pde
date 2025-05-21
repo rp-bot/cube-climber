@@ -1,17 +1,18 @@
-
-
 class Cube {
   PVector position;
   float size;
   int currentFace = 0;
   Face[] faces;
-color[] faceColors = {
-  color(255, 128, 128),  // Front - light red
-  color(255, 153, 153),  // Right - lighter red
-  color(255, 178, 178),  // Back - soft rose
-  color(255, 204, 204)   // Left - very pale red
-};
 
+  // colors for 4 cube sides
+  color[] faceColors = {
+    color(255, 128, 128),
+    color(255, 153, 153),
+    color(255, 178, 178),
+    color(255, 204, 204)
+  };
+
+  // constructor sets position, size, and face array
   Cube(PVector pos, float s) {
     position = pos;
     size = s;
@@ -21,12 +22,13 @@ color[] faceColors = {
     }
   }
 
+  // draw cube with color-coded faces
   void display() {
     pushMatrix();
     translate(position.x, position.y, position.z);
     float hs = size / 2;
 
-    // FRONT
+    // front
     fill(faceColors[0]);
     beginShape(QUADS);
     vertex(-hs, -hs, hs);
@@ -35,7 +37,7 @@ color[] faceColors = {
     vertex(-hs, hs, hs);
     endShape();
 
-    // RIGHT
+    // right
     fill(faceColors[1]);
     beginShape(QUADS);
     vertex(hs, -hs, hs);
@@ -44,7 +46,7 @@ color[] faceColors = {
     vertex(hs, hs, hs);
     endShape();
 
-    // BACK
+    // back
     fill(faceColors[2]);
     beginShape(QUADS);
     vertex(hs, -hs, -hs);
@@ -53,7 +55,7 @@ color[] faceColors = {
     vertex(hs, hs, -hs);
     endShape();
 
-    // LEFT
+    // left
     fill(faceColors[3]);
     beginShape(QUADS);
     vertex(-hs, -hs, -hs);
@@ -62,7 +64,7 @@ color[] faceColors = {
     vertex(-hs, hs, -hs);
     endShape();
 
-    // TOP (gray)
+    // top
     fill(150);
     beginShape(QUADS);
     vertex(-hs, -hs, -hs);
@@ -71,7 +73,7 @@ color[] faceColors = {
     vertex(-hs, -hs, hs);
     endShape();
 
-    // BOTTOM (dark gray)
+    // bottom
     fill(80);
     beginShape(QUADS);
     vertex(-hs, hs, hs);
@@ -79,23 +81,26 @@ color[] faceColors = {
     vertex(hs, hs, -hs);
     vertex(-hs, hs, -hs);
     endShape();
-    
-    
+
+    // draw attached faces
     for (Face f : faces) {
       f.display();
     }
-    
+
     popMatrix();
   }
 
+  // rotate view to the left
   void rotateLeft() {
     currentFace = (currentFace + 1) % 4;
   }
-  
+
+  // rotate view to the right
   void rotateRight() {
     currentFace = (currentFace + 3) % 4;
   }
-  
+
+  // angle to rotate to face front
   float getTargetAngle() {
     return currentFace * 90;
   }

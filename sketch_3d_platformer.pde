@@ -52,10 +52,13 @@ int totalPausedTime = 0;
 boolean isWin = false;
 int winTime = 0;
 int starsEarned = 0;
-
+PImage customCursor;
 
 void setup() {
   size(800, 800, P3D);
+  customCursor = loadImage("coin.png");
+  customCursor.resize(32, 32); // Resize to 16x16 pixels
+  cursor(customCursor, 0, 0); 
   font = createFont("Arial", 24, true);
   uiFont = createFont("Arial", 18, true);
   resumeBtn = new Button("Resume", width/2 - 60, height/2 - 60, 120, 40);

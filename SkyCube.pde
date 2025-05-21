@@ -1,18 +1,20 @@
 class SkyCube {
   float size;
 
+  // constructor sets cube size
   SkyCube(float s) {
     size = s;
   }
 
+  // draw a large colored cube to simulate sky
   void display() {
     pushMatrix();
     noStroke();
     translate(0, 0, 0);
     float hs = size / 2;
 
-    // Back
-    fill(200, 220, 255); // cool sky blue
+    // back
+    fill(200, 220, 255);
     beginShape(QUADS);
     vertex(-hs, -hs, -hs);
     vertex(hs, -hs, -hs);
@@ -20,8 +22,8 @@ class SkyCube {
     vertex(-hs, hs, -hs);
     endShape();
 
-    // Front
-    fill(255, 230, 200); // warm sunrise peach
+    // front
+    fill(255, 230, 200);
     beginShape(QUADS);
     vertex(-hs, -hs, hs);
     vertex(hs, -hs, hs);
@@ -29,7 +31,7 @@ class SkyCube {
     vertex(-hs, hs, hs);
     endShape();
 
-    // Left
+    // left
     fill(220, 240, 255);
     beginShape(QUADS);
     vertex(-hs, -hs, -hs);
@@ -38,7 +40,7 @@ class SkyCube {
     vertex(-hs, hs, -hs);
     endShape();
 
-    // Right
+    // right
     fill(220, 240, 255);
     beginShape(QUADS);
     vertex(hs, -hs, hs);
@@ -47,8 +49,8 @@ class SkyCube {
     vertex(hs, hs, hs);
     endShape();
 
-    // Top
-    fill(255, 255, 255); // bright sky overhead
+    // top
+    fill(255, 255, 255);
     beginShape(QUADS);
     vertex(-hs, -hs, -hs);
     vertex(hs, -hs, -hs);
@@ -56,8 +58,8 @@ class SkyCube {
     vertex(-hs, -hs, hs);
     endShape();
 
-    // Bottom
-    fill(200, 200, 220); // subtle reflection tone
+    // bottom
+    fill(200, 200, 220);
     beginShape(QUADS);
     vertex(-hs, hs, hs);
     vertex(hs, hs, hs);
