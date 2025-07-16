@@ -7,8 +7,8 @@ This is an interesting 3d platformer. It is a game that will make you lose your 
 - Lighting in processing.
 
 ## Dev Installation
-- Get the latest version of processing
-- 
+- Get the latest version of Processing.
+- Install Beads from the processing library manager.
 
 ## Game Goals
 - Get all the coins within 3 minutes
